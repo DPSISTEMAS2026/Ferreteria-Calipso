@@ -236,7 +236,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="panel-foot">
-          <a href="http://localhost:3010" title={iconsOnly ? "Ver la tienda" : undefined}>
+          <a href={process.env.NEXT_PUBLIC_STORE_URL || "http://localhost:3010"} title={iconsOnly ? "Ver la tienda" : undefined}>
             <Icon name="tienda" />
             {!iconsOnly && <span>Ver la tienda</span>}
           </a>

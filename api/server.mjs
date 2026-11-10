@@ -27,6 +27,12 @@ const allowed = new Set([
   "http://127.0.0.1:3010",
   "http://localhost:3012",
   "http://127.0.0.1:3012",
+  "https://ferreteriacalipso.netlify.app",
+  "https://ferreteriacalipso-panel.netlify.app",
+  ...String(process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean),
 ]);
 
 const attempts = new Map();
@@ -56,6 +62,15 @@ function hashPin(pin) {
   const hash = scryptSync(String(pin), salt, 32).toString("hex");
   return `${salt}:${hash}`;
 }
+
+function ensureOwner() {
+  const pin = String(process.env.CALIPSO_OWNER_PIN || "");
+  const staff = readJson(staffFile, []);
+  if (staff.length || !/^\d{4}$/.test(pin)) return;
+  writeJson(staffFile, [{ id: "dueno", name: "Dueño", role: "dueno", pinHash: hashPin(pin) }]);
+}
+
+ensureOwner();
 
 function publicPerson(person) {
   return { id: person.id, name: person.name, role: person.role };
