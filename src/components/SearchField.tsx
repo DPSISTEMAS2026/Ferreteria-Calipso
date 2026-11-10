@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -44,6 +44,9 @@ export function SearchField({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [narrow, setNarrow] = useState(false);
+  const [lifted, setLifted] = useState(false);
+  const [frame, setFrame] = useState({ top: 0, height: 0 });
 
   const ready = query.trim().length >= 3;
   const matches = useMemo(() => {
@@ -79,101 +82,164 @@ export function SearchField({
   }, [pathname]);
 
   useEffect(() => {
-    if (!open) return;
+    const media = window.matchMedia("(max-width: 639px)");
+    const apply = () => setNarrow(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (!lifted) return;
+    const apply = () => {
+      const view = window.visualViewport;
+      setFrame({
+        top: view?.offsetTop ?? 0,
+        height: view?.height ?? window.innerHeight,
+      });
+    };
+    apply();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.visualViewport?.addEventListener("resize", apply);
+    window.visualViewport?.addEventListener("scroll", apply);
+    return () => {
+      document.body.style.overflow = previous;
+      window.visualViewport?.removeEventListener("resize", apply);
+      window.visualViewport?.removeEventListener("scroll", apply);
+    };
+  }, [lifted]);
+
+  useEffect(() => {
+    if (!open || lifted) return;
     const onPointer = (event: PointerEvent) => {
       if (!box.current?.contains(event.target as Node)) setOpen(false);
     };
     window.addEventListener("pointerdown", onPointer);
     return () => window.removeEventListener("pointerdown", onPointer);
-  }, [open]);
+  }, [open, lifted]);
 
   const show = open && ready;
   const current = matches.length === 0 ? 0 : Math.min(active, matches.length - 1);
 
   function choose(slug: string) {
     setOpen(false);
+    setLifted(false);
     onPick?.();
     router.push(`/producto/${slug}`);
   }
 
+  function closeSheet() {
+    setLifted(false);
+    setOpen(false);
+  }
+
+  const onSearchKey = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!show || matches.length === 0) {
+      if (event.key === "Escape") closeSheet();
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((index) => Math.min(matches.length - 1, index + 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((index) => Math.max(0, index - 1));
+    } else if (event.key === "Escape") {
+      closeSheet();
+    } else if (event.key === "Enter" && matches[current]) {
+      event.preventDefault();
+      choose(matches[current].slug);
+    }
+  };
+
+  const results = (
+    <>
+      {matches.length === 0 ? (
+        <p className="px-3 py-3 text-sm text-[#12312e]/70">No hay productos con ese nombre.</p>
+      ) : (
+        <ul className={lifted ? "min-h-0 flex-1 overflow-y-auto overscroll-contain" : "max-h-80 overflow-y-auto"}>
+          {matches.map((product, index) => (
+            <li key={product.slug} role="option" aria-selected={index === current}>
+              <Link
+                href={`/producto/${product.slug}`}
+                onClick={() => { setOpen(false); setLifted(false); onPick?.(); }}
+                onMouseEnter={() => setActive(index)}
+                className={`flex items-center gap-3 px-3 py-3 sm:py-2 ${index === current ? "bg-[#e7f3f0]" : ""}`}
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded bg-[#f7fbfa] sm:h-10 sm:w-10">
+                  {product.image ? <img src={product.image} alt="" className="h-full w-full object-contain" /> : <span className="text-sm font-black text-[#0f6e62]">{product.name.slice(0, 1)}</span>}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="line-clamp-2 block text-base font-medium text-[#12312e] sm:text-sm">{product.name}</span>
+                  <span className="block text-base font-black text-[#12312e] sm:text-sm">{money(product.price)}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link href={`/buscar?q=${encodeURIComponent(query.trim())}`} onClick={() => { setOpen(false); setLifted(false); onPick?.(); }} className="block shrink-0 border-t border-[#12312e]/10 px-3 py-3 text-sm font-bold text-[#0f6e62]">
+        Ver todos los resultados
+      </Link>
+    </>
+  );
+
   return (
-    <form action="/buscar" className={className}>
-      <div ref={box} className="relative">
-        <label htmlFor={id} className="sr-only">Buscar en Calipso</label>
-        <div className="flex overflow-hidden rounded-md border border-[#12312e]/20 bg-white">
+    <form
+      action="/buscar"
+      className={lifted ? "fixed inset-x-0 z-[70] flex flex-col bg-white" : className}
+      style={lifted ? { top: frame.top, height: frame.height || "100dvh" } : undefined}
+    >
+      <div ref={box} className={lifted ? "flex items-center gap-2 border-b border-[#12312e]/10 px-2 py-2" : "relative"}>
+        {lifted && (
+          <button type="button" onClick={closeSheet} className="inline-flex h-11 shrink-0 items-center px-2 text-sm font-bold text-[#12312e]" aria-label="Cerrar búsqueda">
+            Cerrar
+          </button>
+        )}
+        <div className="flex min-w-0 flex-1 overflow-hidden rounded-md border border-[#12312e]/20 bg-white">
+          <label htmlFor={id} className="sr-only">Buscar en Calipso</label>
           <input
             id={id}
             name="q"
             value={query}
             placeholder="Buscar en Calipso"
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            enterKeyHint="search"
             role="combobox"
             aria-expanded={show}
             aria-controls={listId}
             aria-autocomplete="list"
-            className="w-full px-3 py-2 text-sm outline-none"
+            className="w-full min-w-0 px-3 py-2 text-base outline-none sm:text-sm"
             onChange={(event) => {
               setQuery(event.target.value);
               setOpen(true);
             }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={(event) => {
-              if (!show || matches.length === 0) {
-                if (event.key === "Escape") setOpen(false);
-                return;
-              }
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                setActive((index) => Math.min(matches.length - 1, index + 1));
-              } else if (event.key === "ArrowUp") {
-                event.preventDefault();
-                setActive((index) => Math.max(0, index - 1));
-              } else if (event.key === "Escape") {
-                setOpen(false);
-              } else if (event.key === "Enter" && matches[current]) {
-                event.preventDefault();
-                choose(matches[current].slug);
-              }
+            onFocus={() => {
+              setOpen(true);
+              if (layout === "overlay" && narrow) setLifted(true);
             }}
+            onKeyDown={onSearchKey}
           />
           {showButton && (
-            <button type="submit" onClick={() => { setOpen(false); onPick?.(); }} className={`bg-[#0f6e62] text-sm font-bold text-white ${buttonClassName}`}>
+            <button type="submit" onClick={() => { setOpen(false); setLifted(false); onPick?.(); }} className={`bg-[#0f6e62] text-sm font-bold text-white ${buttonClassName} ${lifted ? "!block" : ""}`}>
               Buscar
             </button>
           )}
         </div>
-        {show && (
+        {show && !lifted && (
           <div id={listId} role={matches.length === 0 ? undefined : "listbox"} className={layout === "overlay" ? "absolute left-0 right-0 top-full z-40 mt-1 overflow-hidden rounded-md border border-[#12312e]/10 bg-white shadow-xl" : "mt-2 overflow-hidden rounded-md border border-[#12312e]/10 bg-white"}>
-            {matches.length === 0 ? (
-              <p className="px-3 py-3 text-sm text-[#12312e]/70">No hay productos con ese nombre.</p>
-            ) : (
-              <ul className="max-h-80 overflow-y-auto">
-                {matches.map((product, index) => (
-                  <li key={product.slug} role="option" aria-selected={index === current}>
-                    <Link
-                      href={`/producto/${product.slug}`}
-                      onClick={() => { setOpen(false); onPick?.(); }}
-                      onMouseEnter={() => setActive(index)}
-                      className={`flex items-center gap-3 px-3 py-2 ${index === current ? "bg-[#e7f3f0]" : ""}`}
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-[#f7fbfa]">
-                        {product.image ? <img src={product.image} alt="" className="h-full w-full object-contain" /> : <span className="text-sm font-black text-[#0f6e62]">{product.name.slice(0, 1)}</span>}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="line-clamp-2 block text-sm font-medium text-[#12312e]">{product.name}</span>
-                        <span className="block text-sm font-black text-[#12312e]">{money(product.price)}</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link href={`/buscar?q=${encodeURIComponent(query.trim())}`} onClick={() => { setOpen(false); onPick?.(); }} className="block border-t border-[#12312e]/10 px-3 py-2 text-sm font-bold text-[#0f6e62]">
-              Ver todos los resultados
-            </Link>
+            {results}
           </div>
         )}
       </div>
+      {show && lifted && (
+        <div id={listId} role={matches.length === 0 ? undefined : "listbox"} className="flex min-h-0 flex-1 flex-col">
+          {results}
+        </div>
+      )}
     </form>
   );
 }
