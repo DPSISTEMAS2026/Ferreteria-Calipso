@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-sans), "Segoe UI", sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display), Impact, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+@keyframes calipso-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes calipso-vitrina {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes calipso-sale {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+@keyframes calipso-pagina {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+.vitrina-entra {
+  animation: calipso-vitrina 680ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vitrina-sale {
+  animation: calipso-sale 240ms ease forwards;
+}
+
+.pagina-entra {
+  animation: calipso-pagina 460ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes calipso-anillo {
+  from { stroke-dashoffset: 113; }
+  to { stroke-dashoffset: 0; }
+}
+
+.anillo-giro {
+  stroke-dasharray: 113;
+  animation: calipso-anillo 5.6s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vitrina-entra,
+  .vitrina-sale,
+  .pagina-entra,
+  .anillo-giro { animation: none; }
+}
+
+.home-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 4.5rem;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .home-panel {
+    justify-content: center;
+    padding-bottom: 0;
+    padding-left: 11.5rem;
+  }
+}
+
+.tombola-scene {
+  position: absolute;
+  inset: 0;
+  perspective: 1400px;
+  transition: transform 280ms ease;
+}
+
+.tombola-reel {
+  height: 100%;
+  transition: transform 720ms cubic-bezier(0.16, 0.84, 0.28, 1);
+}
+
+.tombola-face {
+  height: 100%;
+  overflow: hidden;
+}
+
+.tombola {
+  max-width: 100%;
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
+.tombola .grid,
+.tombola .grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tombola-scene,
+  .tombola-reel {
+    transition: none;
+  }
+}

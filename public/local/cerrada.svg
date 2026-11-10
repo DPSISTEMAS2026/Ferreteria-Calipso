@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <rect width="1600" height="900" fill="#1b2430"/>
+  <g fill="#3d4654">
+    <rect x="180" y="180" width="1240" height="28"/>
+    <rect x="180" y="230" width="1240" height="28"/>
+    <rect x="180" y="280" width="1240" height="28"/>
+    <rect x="180" y="330" width="1240" height="28"/>
+    <rect x="180" y="380" width="1240" height="28"/>
+    <rect x="180" y="430" width="1240" height="28"/>
+    <rect x="180" y="480" width="1240" height="28"/>
+    <rect x="180" y="530" width="1240" height="28"/>
+    <rect x="180" y="580" width="1240" height="28"/>
+    <rect x="180" y="630" width="1240" height="28"/>
+    <rect x="180" y="680" width="1240" height="28"/>
+  </g>
+  <text x="800" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="64" font-weight="700" fill="#f2c14e">CORTINA BAJA</text>
+  <text x="800" y="820" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#d5dbe3">Reemplaza este archivo por la foto del local cerrado</text>
+</svg>
