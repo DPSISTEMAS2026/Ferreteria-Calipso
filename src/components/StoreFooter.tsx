@@ -15,6 +15,10 @@ export function StoreFooter() {
           <a href={store.instagram} target="_blank" rel="noreferrer">Instagram</a>
         </div>
       </div>
+      <p className="border-t border-white/10 px-4 py-4 text-center text-xs text-white/70">
+        Sitio desarrollado por DP Sistemas y Automatizaciones SpA{" "}
+        <a href="https://dpsistemas.cl" className="font-semibold text-white underline" target="_blank" rel="noreferrer">dpsistemas.cl</a>
+      </p>
     </footer>
   );
 }
